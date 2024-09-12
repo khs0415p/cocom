@@ -48,7 +48,8 @@ class CoComForPretrining(nn.Module):
         question: torch.LongTensor,
         labels: torch.LongTensor,
     ):
-        compression_token_ids = torch.arange(self.compression_length, dtype=torch.long, device=contexts.device).unsqueeze(0).expand(contexts.size(0), -1)
+        min_length = min(self.compression_length, contexts.size(1))
+        compression_token_ids = torch.arange(min_length, dtype=torch.long, device=contexts.device).unsqueeze(0).expand(contexts.size(0), -1)
         compression_embeds = self.compression_embed(compression_token_ids)
         compression_embeds = compression_embeds.to(self.compressor.dtype)
 
@@ -60,7 +61,7 @@ class CoComForPretrining(nn.Module):
         last_hidden_states = compression_output['hidden_states'][-1][:, -self.compression_length:]
 
         # TODO: dim issue (`is_light(bert)`: 768, `decoder`: 4096)
-        length = question.size(1)
+        length = labels.size(1)
         decoder_embeds = self.decoder.get_input_embeddings()(question)
 
         sep_embed = self.decoder.get_input_embeddings().weight[self.decoder_tokenizer.sep_token_id].unsqueeze(0).expand(decoder_embeds.size(0), -1).unsqueeze(1)

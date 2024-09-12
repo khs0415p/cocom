@@ -141,6 +141,7 @@ def train():
         compressor = decoder
     
     compression_length = data_args.context_length // model_args.compression_rate
+
     model = CoComForPretrining(
         compressor=compressor,
         decoder=decoder,
@@ -181,8 +182,23 @@ def train():
         decoder_train_dataset = compression_train_dataset
         decoder_eval_dataset = compression_eval_dataset
 
-    train_dataset = PretrainingDataset(compression_train_dataset, decoder_train_dataset)
-    eval_dataset = PretrainingDataset(compression_eval_dataset, decoder_eval_dataset)
+    train_dataset = PretrainingDataset(
+        compression_train_dataset,
+        decoder_train_dataset,
+        tokenizer=compressor_tokenizer,
+        compression_rate=model_args.compression_rate,
+        context_length=data_args.context_length
+    )
+    eval_dataset = PretrainingDataset(
+        compression_eval_dataset,
+        decoder_eval_dataset,
+        tokenizer=compressor_tokenizer,
+        compression_rate=model_args.compression_rate,
+        context_length=data_args.context_length
+    )
+
+    logger.info(f"Number of Training-Data : {len(train_dataset)}")
+    logger.info(f"Number of Evaluation-Data : {len(train_dataset)}")
 
     data_collator = CustomDataCollator(compressor_tokenizer.pad_token_id, decoder_tokenizer.pad_token_id)
 
